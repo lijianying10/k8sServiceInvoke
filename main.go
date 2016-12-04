@@ -16,5 +16,5 @@ func main() {
 	conn := schedular.NewConnection(*kubeconfig)
 
 	srv := schedular.NewServiceControl(conn)
-	srv.ServiceExist("app=pcmysql,pod-template-hash=1667360149")
+	srv.ServiceExist("docker.elenet.me/sre/valid-python-sample:1")
 }

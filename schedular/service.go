@@ -3,6 +3,8 @@ package schedular
 import (
 	"errors"
 
+	"strings"
+
 	"github.com/lijianying10/log"
 	"k8s.io/client-go/pkg/api/v1"
 )
@@ -17,9 +19,25 @@ func NewServiceControl(conn *Connection) *ServiceControl {
 	return &serviceControl
 }
 
+func (sc *ServiceControl) ServiceNameHandle(imageName string) (string, string, error) {
+	strs := strings.Split(imageName, ":")
+	if len(strs) != 2 {
+		return "", "", errors.New("error define image name")
+	}
+
+	strs[0] = strings.Replace(strs[0], "/", "_", -1)
+
+	return strs[0], strs[1], nil
+}
+
 func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
+	var err error
+	img, ver, err := sc.ServiceNameHandle(imageName)
+	if err != nil {
+		return false, err
+	}
 	pods, err := sc.Conn.ClientSet.Core().Pods("").List(v1.ListOptions{
-		LabelSelector: imageName,
+		LabelSelector: "servicetype=ewf,image=" + img + ",version=" + ver,
 	})
 	if err != nil {
 		log.Error("get images error", err.Error())
