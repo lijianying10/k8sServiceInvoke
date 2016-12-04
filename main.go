@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
+	"github.com/lijianying10/k8sServiceInvoke/schedular"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -16,19 +15,12 @@ var (
 
 func main() {
 	fmt.Println("starting")
-	flag.Parse()
-	// uses the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+	conn := schedular.NewConnection(*kubeconfig)
+
 	for {
-		pods, err := clientset.Core().Pods("").List(v1.ListOptions{})
+		pods, err := conn.ClientSet.Core().Pods("").List(v1.ListOptions{
+			LabelSelector: "app=pcmysql,pod-template-hash=1667360149",
+		})
 		if err != nil {
 			panic(err.Error())
 		}
