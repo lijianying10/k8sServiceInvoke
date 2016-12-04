@@ -15,6 +15,16 @@ func main() {
 	fmt.Println("starting")
 	conn := schedular.NewConnection(*kubeconfig)
 
-	srv := schedular.NewServiceControl(conn)
-	srv.ServiceExist("docker.elenet.me/sre/valid-python-sample:1")
+	K8SNameSpace := "sre"
+
+	srv := schedular.NewServiceControl(conn, K8SNameSpace)
+	exist, err := srv.ServiceExist("docker.elenet.me/sre/valid-python-sample:1")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println("exist: ", exist)
+	err = srv.ServiceCreate("docker.elenet.me/sre/valid-python-sample:1")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }

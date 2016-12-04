@@ -10,12 +10,14 @@ import (
 )
 
 type ServiceControl struct {
-	Conn *Connection
+	Conn         *Connection
+	K8SNameSpace string
 }
 
-func NewServiceControl(conn *Connection) *ServiceControl {
+func NewServiceControl(conn *Connection, NameSpace string) *ServiceControl {
 	var serviceControl ServiceControl
 	serviceControl.Conn = conn
+	serviceControl.K8SNameSpace = NameSpace
 	return &serviceControl
 }
 
@@ -25,7 +27,9 @@ func (sc *ServiceControl) ServiceNameHandle(imageName string) (string, string, e
 		return "", "", errors.New("error define image name")
 	}
 
-	strs[0] = strings.Replace(strs[0], "/", "_", -1)
+	strs[0] = strings.Replace(strs[0], "/", "-", -1)
+	//strs[0] = strings.Replace(strs[0], "-", "_", -1)
+	strs[0] = strings.Replace(strs[0], ".", "-", -1)
 
 	return strs[0], strs[1], nil
 }
@@ -36,7 +40,7 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	pods, err := sc.Conn.ClientSet.Core().Pods("").List(v1.ListOptions{
+	pods, err := sc.Conn.ClientSet.Core().Pods(sc.K8SNameSpace).List(v1.ListOptions{
 		LabelSelector: "servicetype=ewf,image=" + img + ",version=" + ver,
 	})
 	if err != nil {
@@ -44,7 +48,11 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 		return false, errors.New("error get service")
 	}
 
-	if len(pods.Items) != 1 {
+	if len(pods.Items) == 0 {
+		return false, nil
+	}
+
+	if len(pods.Items) >= 1 {
 		return false, errors.New("Multi service error")
 	}
 
@@ -53,4 +61,31 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (sc *ServiceControl) ServiceCreate(imageName string) error {
+	img, ver, err := sc.ServiceNameHandle(imageName)
+	if err != nil {
+		return err
+	}
+	_, err = sc.Conn.ClientSet.Core().Pods(sc.K8SNameSpace).Create(&v1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name: img + "-" + ver + "ewfpod",
+			Labels: map[string]string{
+				"servicetype": "ewf",
+				"image":       img,
+				"version":     ver,
+			},
+			Namespace: sc.K8SNameSpace,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				v1.Container{
+					Name:  img + "-" + ver + "-ewfrunc",
+					Image: imageName,
+				},
+			},
+		},
+	})
+	return err
 }
