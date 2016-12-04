@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	kubeconfig = flag.String("kubeconfig", "/Users/ljy/.kube/config", "absolute path to the kubeconfig file")
+	kubeconfig = flag.String("kubeconfig", "/home/a/.kube/config", "absolute path to the kubeconfig file")
 )
 
 func main() {
