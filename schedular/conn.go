@@ -1,7 +1,7 @@
 package schedular
 
 import (
-	"github.com/eleme/esm-agent/log"
+	"github.com/lijianying10/log"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
