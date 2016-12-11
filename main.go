@@ -32,4 +32,6 @@ func main() {
 		}
 	}
 
+	srv.ServiceCMDInvoke("docker.elenet.me/sre/valid-python-sample:1", "")
+
 }
