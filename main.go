@@ -18,13 +18,18 @@ func main() {
 	K8SNameSpace := "sre"
 
 	srv := schedular.NewServiceControl(conn, K8SNameSpace)
+
 	exist, err := srv.ServiceExist("docker.elenet.me/sre/valid-python-sample:1")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	fmt.Println("exist: ", exist)
-	err = srv.ServiceCreate("docker.elenet.me/sre/valid-python-sample:1")
-	if err != nil {
-		fmt.Println(err.Error())
+	if !exist {
+		err = srv.ServiceCreate("docker.elenet.me/sre/valid-python-sample:1")
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	}
+
 }

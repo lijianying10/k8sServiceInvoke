@@ -52,10 +52,10 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 		return false, nil
 	}
 
-	if len(pods.Items) >= 1 {
+	if len(pods.Items) > 1 {
 		return false, errors.New("Multi service error")
 	}
-
+	log.Info(pods.Items[0].Status.Phase)
 	if pods.Items[0].Status.Phase != "Running" {
 		return false, errors.New("Service is not running")
 	}
@@ -64,6 +64,7 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 }
 
 func (sc *ServiceControl) ServiceCreate(imageName string) error {
+	log.Info("creating service : ", imageName)
 	img, ver, err := sc.ServiceNameHandle(imageName)
 	if err != nil {
 		return err
