@@ -82,8 +82,11 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				v1.Container{
-					Name:  img + "-" + ver + "-ewfrunc",
-					Image: imageName,
+					Name:    img + "-" + ver + "-ewfrunc",
+					Image:   imageName,
+					Command: []string{"sleep", "10000d"},
+					Stdin:   true,
+					TTY:     false,
 				},
 			},
 		},
