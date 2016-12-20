@@ -7,6 +7,7 @@ import (
 
 	"github.com/lijianying10/log"
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 type ServiceControl struct {
@@ -68,7 +69,7 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 	if err != nil {
 		return err
 	}
-	_, err = sc.Conn.ClientSet.Core().Pods(sc.K8SNameSpace).Create(&v1.Pod{
+	sc.Conn.ClientSet.ExtensionsV1beta1Client.Deployments(sc.K8SNameSpace).Create(&v1beta1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
 			Name: img + "-" + ver + "ewfpod",
 			Labels: map[string]string{
@@ -78,14 +79,20 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 			},
 			Namespace: sc.K8SNameSpace,
 		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				v1.Container{
-					Name:  img + "-" + ver + "-ewfrunc",
-					Image: imageName,
+		Spec: v1beta1.DeploymentSpec{
+			Replicas: 2,
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						v1.Container{
+							Name:  img + "-" + ver + "-ewfrunc",
+							Image: imageName,
+						},
+					},
 				},
 			},
 		},
 	})
+
 	return err
 }
