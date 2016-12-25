@@ -69,9 +69,9 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 	if err != nil {
 		return err
 	}
-	sc.Conn.ClientSet.ExtensionsV1beta1Client.Deployments(sc.K8SNameSpace).Create(&v1beta1.Deployment{
+	_, err = sc.Conn.ClientSet.ExtensionsV1beta1Client.Deployments(sc.K8SNameSpace).Create(&v1beta1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
-			Name: img + "-" + ver + "ewfpod",
+			Name: img + "-" + ver + "ewf",
 			Labels: map[string]string{
 				"servicetype": "ewf",
 				"image":       img,
@@ -93,6 +93,38 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 			},
 		},
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	_, err = sc.Conn.ClientSet.CoreV1Client.Services(sc.K8SNameSpace).Create(&v1.Service{
+		ObjectMeta: v1.ObjectMeta{
+			Name: img + "-" + ver + "ewf",
+			Labels: map[string]string{
+				"servicetype": "ewf",
+				"image":       img,
+				"version":     ver,
+			},
+			Namespace: sc.K8SNameSpace,
+		},
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{
+				v1.ServicePort{
+					Protocol:   v1.ProtocolTCP,
+					Port:       80,
+					TargetPort: 10080,
+				},
+			},
+			Selector: map[string]string{
+				"servicetype": "ewf",
+				"image":       img,
+				"version":     ver,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
