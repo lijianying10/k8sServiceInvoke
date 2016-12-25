@@ -6,9 +6,14 @@ import (
 
 	"strings"
 
+	"fmt"
+
+	"crypto/md5"
+
 	"github.com/lijianying10/log"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/util/intstr"
 )
 
 type ServiceControl struct {
@@ -30,7 +35,6 @@ func (sc *ServiceControl) ServiceNameHandle(imageName string) (string, string, e
 	}
 
 	strs[0] = strings.Replace(strs[0], "/", "-", -1)
-	//strs[0] = strings.Replace(strs[0], "-", "_", -1)
 	strs[0] = strings.Replace(strs[0], ".", "-", -1)
 
 	return strs[0], strs[1], nil
@@ -58,7 +62,7 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 		return false, errors.New("Multi service error")
 	}
 
-	resp, err := http.Get("http://" + img + "-" + ver + "ewf." + sc.K8SNameSpace + ".svc.pso.elenet.me")
+	resp, err := http.Get("http://" + fmt.Sprintf("s%x", md5.Sum([]byte(img+"-"+ver+"ewf")))[:16] + "." + sc.K8SNameSpace + ".svc.pso.elenet.me")
 	if err != nil {
 		return false, errors.New("request service health error: " + err.Error())
 	}
@@ -71,6 +75,7 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 }
 
 func (sc *ServiceControl) ServiceCreate(imageName string) error {
+	Replicas := int32(2)
 	img, ver, err := sc.ServiceNameHandle(imageName)
 	if err != nil {
 		return err
@@ -86,8 +91,15 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 			Namespace: sc.K8SNameSpace,
 		},
 		Spec: v1beta1.DeploymentSpec{
-			Replicas: 2,
+			Replicas: &Replicas,
 			Template: v1.PodTemplateSpec{
+				ObjectMeta: v1.ObjectMeta{
+					Labels: map[string]string{
+						"servicetype": "ewf",
+						"image":       img,
+						"version":     ver,
+					},
+				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						v1.Container{
@@ -105,7 +117,7 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 
 	_, err = sc.Conn.ClientSet.CoreV1Client.Services(sc.K8SNameSpace).Create(&v1.Service{
 		ObjectMeta: v1.ObjectMeta{
-			Name: img + "-" + ver + "ewf",
+			Name: fmt.Sprintf("s%x", md5.Sum([]byte(img+"-"+ver+"ewf")))[:16],
 			Labels: map[string]string{
 				"servicetype": "ewf",
 				"image":       img,
@@ -116,9 +128,12 @@ func (sc *ServiceControl) ServiceCreate(imageName string) error {
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
 				v1.ServicePort{
-					Protocol:   v1.ProtocolTCP,
-					Port:       80,
-					TargetPort: 10080,
+					Protocol: v1.ProtocolTCP,
+					Port:     80,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: 10080,
+					},
 				},
 			},
 			Selector: map[string]string{
