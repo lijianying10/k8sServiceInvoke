@@ -58,7 +58,7 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 		return false, nil
 	}
 
-	if len(srvs.Items) >= 1 {
+	if len(srvs.Items) > 1 {
 		return false, errors.New("Multi service error")
 	}
 
