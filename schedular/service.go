@@ -2,6 +2,7 @@ package schedular
 
 import (
 	"errors"
+	"net/http"
 
 	"strings"
 
@@ -41,7 +42,7 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	pods, err := sc.Conn.ClientSet.Core().Pods(sc.K8SNameSpace).List(v1.ListOptions{
+	srvs, err := sc.Conn.ClientSet.Core().Services(sc.K8SNameSpace).List(v1.ListOptions{
 		LabelSelector: "servicetype=ewf,image=" + img + ",version=" + ver,
 	})
 	if err != nil {
@@ -49,16 +50,21 @@ func (sc *ServiceControl) ServiceExist(imageName string) (bool, error) {
 		return false, errors.New("error get service")
 	}
 
-	if len(pods.Items) == 0 {
+	if len(srvs.Items) == 0 {
 		return false, nil
 	}
 
-	if len(pods.Items) >= 1 {
+	if len(srvs.Items) >= 1 {
 		return false, errors.New("Multi service error")
 	}
 
-	if pods.Items[0].Status.Phase != "Running" {
-		return false, errors.New("Service is not running")
+	resp, err := http.Get("http://" + img + "-" + ver + "ewf." + sc.K8SNameSpace + ".svc.pso.elenet.me")
+	if err != nil {
+		return false, errors.New("request service health error: " + err.Error())
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return false, errors.New("Can not access to serice deployment")
 	}
 
 	return true, nil
